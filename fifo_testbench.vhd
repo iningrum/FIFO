@@ -11,6 +11,7 @@ architecture behaviour of fifo_tb is
 			PUSH : in std_logic;
 			POP : in std_logic;
 			INIT : in std_logic;
+			CLK : in std_logic;
 			-- outputs 1B
 			FULL : out std_logic;
 			EMPTY : out std_logic;
