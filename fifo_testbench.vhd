@@ -79,6 +79,14 @@ begin
 	assert NOPUSH = '1' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
 		report "Memory overflow"
 		severity failure;
+	POP <= NOT POP;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
+		report "NOPUSH shouldn't be in HIGH state as FIFO is no longer full"
+		severity failure;
+	PUSH <= NOT PUSH;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
+		report "Memory should be full"
+		severity failure;
 	-- popping
 	for i in 0 to 2 loop
 		POP <= NOT POP;
@@ -88,11 +96,19 @@ begin
 	end loop;
 	POP <= NOT POP;
 	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '1'
-		report "Memory should be full"
+		report "Memory should be empty"
 		severity failure;
 	POP <= NOT POP;
 	assert NOPUSH = '0' AND NOPOP = '1' AND FULL = '0' AND EMPTY = '1'
 		report "Memory overflow"
+		severity failure;
+	PUSH <= NOT PUSH;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
+		report "NOPOP shouldn't be in HIGH state as FIFO is no longer empty"
+		severity failure;
+	POP <= NOT POP;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '1'
+		report "Memory should be empty"
 		severity failure;
 	end process;
 	
