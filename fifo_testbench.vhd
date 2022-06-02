@@ -11,7 +11,6 @@ architecture behaviour of fifo_tb is
 			PUSH : in std_logic;
 			POP : in std_logic;
 			INIT : in std_logic;
-			CLK : in std_logic;
 			-- outputs 1B
 			FULL : out std_logic;
 			EMPTY : out std_logic;
@@ -26,7 +25,6 @@ architecture behaviour of fifo_tb is
 	signal PUSH : std_logic;
 	signal POP : std_logic;
 	signal INIT : std_logic;
-	signal CLK : std_logic;
 	-- 1B out
 	signal FULL : std_logic;
 	signal EMPTY : std_logic;
@@ -35,13 +33,15 @@ architecture behaviour of fifo_tb is
 	-- 8B I/O
 	signal INPUT : std_logic_vector(7 downto 0);
 	signal OUTPUT : std_logic_vector(7 downto 0);
-	constant ckPERIOD : time := 5 ns;
+	-- additional signals
+	signal lastPUSH : std_logic;
+	signal lastPOP : std_logic;
+	signal OPERATION_DONE : std_logic;
 begin
 	uut: FIFO_allocator port map (
 		PUSH => PUSH,
 		POP => POP,
 		INIT => INIT,
-		CLK => CLK,
 		FULL => FULL,
 		EMPTY => EMPTY,
 		NOPOP => NOPOP,
@@ -52,36 +52,78 @@ begin
 
 --	INIT - then
 --	5 writes and 5 reads - fifth one should be either NOPOP or NOPUSH fourth one should be FULL or EMPTY
-CLK_GEN: process
-begin
-	CLK <= '0';
-	loop
-		wait for ckPERIOD;
-		CLK <= not CLK;
-	end loop;
-	wait;
-end process CLK_GEN;
 -- testing behaviour of control unit
 TEST_CONTROL_UNIT: process
 begin
 	PUSH <= '0';
+	lastPUSH <= '0';
+	lastPOP <= '0';
 	POP <= '0';
 	INIT <= '0';
 	INPUT <= "00000000";
+	OPERATION_DONE <= '0';
 	-- execution
 	INIT <= '1';
-	for i in 0 to 4 loop
-		wait until CLK = '1' ;
-		PUSH <= not PUSH;
-		INPUT <= std_logic_vector(unsigned(INPUT) + 1);
-		wait until CLK = '1' ;
-		PUSH <= not PUSH;
+	-- pushing
+	for i in 0 to 2 loop
+		PUSH <= NOT PUSH;
+		assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
+			report "Invalid allocation"
+			severity failure;
 	end loop;
-	for i in 0 to 4 loop
-		wait until CLK = '1' ;
-		POP <= not POP;
-		wait until CLK = '1' ;
-		POP <= not POP;
+	PUSH <= NOT PUSH;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
+		report "Memory should be full"
+		severity failure;
+	PUSH <= NOT PUSH;
+	assert NOPUSH = '1' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
+		report "Memory overflow"
+		severity failure;
+	POP <= NOT POP;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
+		report "NOPUSH shouldn't be in HIGH state as FIFO is no longer full"
+		severity failure;
+	PUSH <= NOT PUSH;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
+		report "Memory should be full"
+		severity failure;
+	-- popping
+	for i in 0 to 2 loop
+		POP <= NOT POP;
+		assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
+			report "Invalid allocation"
+			severity failure;
 	end loop;
+	POP <= NOT POP;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '1'
+		report "Memory should be empty"
+		severity failure;
+	POP <= NOT POP;
+	assert NOPUSH = '0' AND NOPOP = '1' AND FULL = '0' AND EMPTY = '1'
+		report "Memory overflow"
+		severity failure;
+	PUSH <= NOT PUSH;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
+		report "NOPOP shouldn't be in HIGH state as FIFO is no longer empty"
+		severity failure;
+	POP <= NOT POP;
+	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '1'
+		report "Memory should be empty"
+		severity failure;
 	end process;
+	
+	process(PUSH, POP, lastPUSH, lastPOP, OPERATION_DONE)
+   begin
+     if PUSH /= lastPUSH then
+			if OPERATION_DONE = '1' then
+            	lastPUSH <= PUSH;
+				OPERATION_DONE <= '0';
+			end if;
+	elsif POP /= lastPOP then
+			if OPERATION_DONE = '1' then
+            	lastPOP <= POP;
+				OPERATION_DONE <= '0';
+			end if;
+     end if;
+   end process;
 	END;
