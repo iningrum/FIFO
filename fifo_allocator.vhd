@@ -16,7 +16,7 @@ entity fifo is
 			NOPUSH : out std_logic;
 			-- 8B I/O
 			INPUT : in std_logic_vector(7 downto 0);
-			OUTPUT : out std_logic_vector(7 downto 0)
+			OUTPUT : out std_logic_vector(31 downto 0)
 		);
 end entity;
 architecture bechaviour of fifo is
@@ -40,13 +40,13 @@ architecture bechaviour of fifo is
 		);
 	end component;
 	signal malloc, free : std_logic;
-	signal size : positive := 0;
-	constant capacity : positive := 3;
+	signal size : natural;
+	constant capacity : natural := 3;
 	
 	begin
 		ALLOCATOR: process(CLK, PUSH, POP, free, malloc) is
 		begin
-			if (rising_edge(CLK)) then
+			if (rising_edge(CLK) AND INIT='1') then
 				EMPTY <= '0';
 				FULL <= '0';
 				NOPOP <='0';
@@ -57,29 +57,33 @@ architecture bechaviour of fifo is
 					EMPTY <='1';
 				end if;
 				if (PUSH='1' AND POP='0') then
-					if(FULL='1') then
-						NOPUSH <= '1';
-						return;
-					end if;
-					malloc <= '1';
-					size <= size +1;
 					if(size=capacity) then
-						FULL <= '1';
+						NOPUSH <= '1';
+					elsif (malloc='0') then
+						malloc <= '1';
+						size <= size +1;
+						if(size=capacity) then
+							FULL <= '1';
+						end if;
 					end if;
-					wait for malloc='0';
 				elsif (POP='1' AND PUSH='0') then
-					if (EMPTY='1') then
+					if (size=0) then
 						NOPOP <='1';
-						return;
+					elsif (free='0') then
+						free <= '1';
+						size <= size - 1;
+						if (size = 0) then
+							EMPTY<='1';
+						end if;
 					end if;
-					free <= '1';
-					size <= size - 1;
-					if (size = 0) then
-						EMPTY<='1';
-					end if;
-					wait for free='0';
 				end if;
-					
+			else
+				size <= 0;
+				OUTPUT <= "00000000000000000000000000000000";
+				NOPOP <= '0';
+				NOPUSH <='0';
+				FULL <= '0';
+				EMPTY <= '0';
 			end if;
 		end process;
 		MEMORY_DISPLAY : process(INPUT, free, malloc) is
