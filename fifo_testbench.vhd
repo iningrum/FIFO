@@ -19,7 +19,7 @@ architecture behaviour of fifo_tb is
 			NOPUSH : out std_logic;
 			-- 8B I/O
 			INPUT : in std_logic_vector(7 downto 0);
-			OUTPUT : out std_logic_vector(7 downto 0)
+			OUTPUT : out std_logic_vector(31 downto 0)
 		);
 	end component;
 	-- 1B in
@@ -34,7 +34,7 @@ architecture behaviour of fifo_tb is
 	signal NOPUSH : std_logic;
 	-- 8B I/O
 	signal INPUT : std_logic_vector(7 downto 0);
-	signal OUTPUT : std_logic_vector(7 downto 0);
+	signal OUTPUT : std_logic_vector(31 downto 0);
 	-- additional signals
 	constant CKperiod : time := 5 ns;
 	
