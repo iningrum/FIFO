@@ -97,7 +97,7 @@ architecture bechaviour of fifo is
 					OUTPUT <= buffr;
 					malloc <= '0';
 				elsif (free='1') then
-					buffr <= x"00" & buffr(31 downto 8);
+					buffr <= x"00" & buffr(23 downto 0);
 					OUTPUT <= buffr;
 					free <= '0';
 				end if;
