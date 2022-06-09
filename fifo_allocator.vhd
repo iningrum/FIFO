@@ -40,6 +40,7 @@ architecture bechaviour of fifo is
 		);
 	end component;
 	signal malloc, free : std_logic;
+	signal buffr : std_logic_vector(31 downto 0);
 	signal size : natural;
 	constant capacity : natural := 3;
 	
@@ -91,13 +92,13 @@ architecture bechaviour of fifo is
 			if (malloc/=free) then
 				if (malloc='1') then
 					for i in size*8 to size*8+7  loop
-						OUTPUT(i) <= INPUT(i-size*8);
+						buffr(i) <= INPUT(i-size*8);
 					end loop;
+					OUTPUT <= buffr;
 					malloc <= '0';
 				elsif (free='1') then
-					for i in size*8-1 downto size*8+8  loop
-						OUTPUT(i) <= '0';
-					end loop;
+					buffr <= x"00" & buffr(31 downto 8);
+					OUTPUT <= buffr;
 					free <= '0';
 				end if;
 			end if;
