@@ -16,7 +16,7 @@ entity fifo is
 			NOPUSH : out std_logic;
 			-- 8B I/O
 			INPUT : in std_logic_vector(7 downto 0);
-			OUTPUT : out std_logic_vector(31 downto 0)
+			OUTPUT : out std_logic_vector(7 downto 0)
 		);
 end entity;
 architecture bechaviour of fifo is
@@ -36,7 +36,7 @@ architecture bechaviour of fifo is
 	component memory
 		port(
 			INPUT : in std_logic_vector(7 downto 0);
-			OUTPUT : out std_logic_vector(31 downto 0)
+			OUTPUT : out std_logic_vector(7 downto 0)
 		);
 	end component;
 	signal malloc, free, mem_done : std_logic;
@@ -84,7 +84,7 @@ architecture bechaviour of fifo is
 				end if;
 			else
 				size <= 0;
-				OUTPUT <= "00000000000000000000000000000000";
+				--OUTPUT <= "00000000";
 				NOPOP <= '0';
 				NOPUSH <='0';
 				FULL <= '0';
@@ -104,12 +104,11 @@ architecture bechaviour of fifo is
 						buffr(23 downto 16) <= INPUT(7 downto 0);
 					elsif (size=3) then
 						buffr(31 downto 24) <= INPUT(7 downto 0);
-					end if;
-					OUTPUT <= buffr;
+					end if;			
 					mem_done <= '1';
 				elsif (free='1') then
+					OUTPUT <= buffr(31 downto 24);
 					buffr <= x"00" & buffr(23 downto 0);
-					OUTPUT <= buffr;
 					mem_done <= '1';
 				end if;
 				elsif (malloc=free AND malloc='0') then
