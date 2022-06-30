@@ -61,6 +61,12 @@ begin
 	POP <= '0';
 	INIT <= '0';
 	INPUT <= "00000000";
+	INIT <='0';
+	NOPOP <= '0';
+	NOPUSH <= '0';
+	FULL <= '0';
+	EMPTY <= '1';
+	wait until rising_edge(CLK);
 	-- execution
 	INIT <= '1';
 	-- pushing

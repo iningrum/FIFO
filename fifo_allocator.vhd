@@ -21,7 +21,7 @@ entity fifo is
 end entity;
 architecture bechaviour of fifo is
 
-	signal malloc, free, mem_done : std_logic;
+	--signal malloc, free, mem_done : std_logic;
 	signal buffr : std_logic_vector(31 downto 0);
 	signal size : natural;
 	constant capacity : natural := 3;
@@ -29,73 +29,40 @@ architecture bechaviour of fifo is
 	begin
 		ALLOCATOR: process(CLK, INIT) is
 		begin
-			if (rising_edge(CLK) AND INIT='1') then
-				EMPTY <= '0';
-				FULL <= '0';
-				NOPOP <='0';
-				NOPUSH <='0';
-				if (size=capacity) then
-					FULL <= '1';
-				elsif (size=0) then
-					EMPTY <='1';
-				end if;
-				if (mem_done = '1') then
-					malloc <= '0';
-					free <= '0';
-				end if;
-				if (PUSH='1' AND POP='0') then
-					if(size=capacity) then
-						NOPUSH <= '1';
-					elsif (malloc='0') then
-						malloc <= '1';
+			if rising_edge(CLK) and INIT='1' then
+				if PUSH /= POP then
+					if size = '0' then
+						EMPTY <= '1';
+					elsif size = '3' then
+						FULL <= '1';
+					else
+						EMPTY <= '0';
+						FULL <= '0';
+						NOPOP <= '0';
+						NOPUSH <='0';
+					end if;
+					if PUSH ='1' AND FULL='0' then
+						if size =0 then
+							buffr(7 downto 0) <= INPUT(7 downto 0);
+						elsif size=1 then
+							buffr(15 downto 8) <= INPUT(7 downto 0);
+						elsif size=2 then
+							buffr(23 downto 16) <= INPUT(7 downto 0);
+						elsif (size=3) then
+							buffr(7 downto 0) <= INPUT(7 downto 0);
+						end if;
 						size <= size +1;
-						if(size=capacity) then
-							FULL <= '1';
-						end if;
-					end if;
-				elsif (POP='1' AND PUSH='0') then
-					if (size=0) then
-						NOPOP <='1';
-					elsif (free='0') then
-						free <= '1';
-						size <= size - 1;
-						if (size = 0) then
-							EMPTY<='1';
-						end if;
+					elsif POP ='1' and EMPTY='0' then
+						OUTPUT <= buffr(31 downto 24); 
+						buffr <= x"00" & buffr(23 downto 0);
+					elsif PUSH = '1' and FULL ='1' then
+						NOPUSH <='1';
+					elsif POP = '1' and EMPTY = '1' then
+						NOPOP <= '1';
 					end if;
 				end if;
-			else
-				size <= 0;
-				--OUTPUT <= "00000000";
-				NOPOP <= '0';
-				NOPUSH <='0';
-				FULL <= '0';
-				EMPTY <= '0';
-			end if;
-		end process;
-		MEMORY_DISPLAY : process(CLK) is
-		begin
-			if (rising_edge(CLK)) then
-				if (malloc/=free) then
-				if (malloc='1') then
-					if (size=0) then
-						buffr(7 downto 0) <= INPUT(7 downto 0);
-					elsif (size=1) then
-						buffr(15 downto 8) <= INPUT(7 downto 0);
-					elsif (size=2) then
-						buffr(23 downto 16) <= INPUT(7 downto 0);
-					elsif (size=3) then
-						buffr(31 downto 24) <= INPUT(7 downto 0);
-					end if;			
-					mem_done <= '1';
-				elsif (free='1') then
-					OUTPUT <= buffr(31 downto 24);
-					buffr <= x"00" & buffr(23 downto 0);
-					mem_done <= '1';
-				end if;
-				elsif (malloc=free AND malloc='0') then
-					mem_done<='0';
-				end if;
+			elsif INIT='0' then
+			size <=0;
 			end if;
 		end process;
 end architecture;
