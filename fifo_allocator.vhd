@@ -20,25 +20,7 @@ entity fifo is
 		);
 end entity;
 architecture bechaviour of fifo is
-	component fifo_allocator
-		port(
-			PUSH : in std_logic;
-			POP : in std_logic;
-			INIT : in std_logic;
-			CLK : in std_logic;
-			-- outputs
-			FULL : out std_logic;
-			EMPTY : out std_logic;
-			NOPOP : out std_logic;
-			NOPUSH : out std_logic
-		);
-	end component;
-	component memory
-		port(
-			INPUT : in std_logic_vector(7 downto 0);
-			OUTPUT : out std_logic_vector(7 downto 0)
-		);
-	end component;
+
 	signal malloc, free, mem_done : std_logic;
 	signal buffr : std_logic_vector(31 downto 0);
 	signal size : natural;
