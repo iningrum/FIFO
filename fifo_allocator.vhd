@@ -39,13 +39,13 @@ architecture bechaviour of fifo is
 			OUTPUT : out std_logic_vector(31 downto 0)
 		);
 	end component;
-	signal malloc, free : std_logic;
+	signal malloc, free, mem_done : std_logic;
 	signal buffr : std_logic_vector(31 downto 0);
 	signal size : natural;
 	constant capacity : natural := 3;
 	
 	begin
-		ALLOCATOR: process(CLK, PUSH, POP, free, malloc) is
+		ALLOCATOR: process(CLK, INIT) is
 		begin
 			if (rising_edge(CLK) AND INIT='1') then
 				EMPTY <= '0';
@@ -56,6 +56,10 @@ architecture bechaviour of fifo is
 					FULL <= '1';
 				elsif (size=0) then
 					EMPTY <='1';
+				end if;
+				if (mem_done = '1') then
+					malloc <= '0';
+					free <= '0';
 				end if;
 				if (PUSH='1' AND POP='0') then
 					if(size=capacity) then
@@ -87,19 +91,29 @@ architecture bechaviour of fifo is
 				EMPTY <= '0';
 			end if;
 		end process;
-		MEMORY_DISPLAY : process(INPUT, free, malloc) is
+		MEMORY_DISPLAY : process(CLK) is
 		begin
-			if (malloc/=free) then
+			if (rising_edge(CLK)) then
+				if (malloc/=free) then
 				if (malloc='1') then
-					for i in size*8 to size*8+7  loop
-						buffr(i) <= INPUT(i-size*8);
-					end loop;
+					if (size=0) then
+						buffr(7 downto 0) <= INPUT(7 downto 0);
+					elsif (size=1) then
+						buffr(15 downto 8) <= INPUT(7 downto 0);
+					elsif (size=2) then
+						buffr(23 downto 16) <= INPUT(7 downto 0);
+					elsif (size=3) then
+						buffr(31 downto 24) <= INPUT(7 downto 0);
+					end if;
 					OUTPUT <= buffr;
-					malloc <= '0';
+					mem_done <= '1';
 				elsif (free='1') then
 					buffr <= x"00" & buffr(23 downto 0);
 					OUTPUT <= buffr;
-					free <= '0';
+					mem_done <= '1';
+				end if;
+				elsif (malloc=free AND malloc='0') then
+					mem_done<='0';
 				end if;
 			end if;
 		end process;
