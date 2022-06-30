@@ -5,7 +5,7 @@ use IEEE.numeric_std.all;
 entity fifo_tb is
 end entity;
 architecture behaviour of fifo_tb is
-	component FIFO_allocator
+	component fifo
 		PORT(
 			-- inputs 1B
 			PUSH : in std_logic;
@@ -19,7 +19,7 @@ architecture behaviour of fifo_tb is
 			NOPUSH : out std_logic;
 			-- 8B I/O
 			INPUT : in std_logic_vector(7 downto 0);
-			OUTPUT : out std_logic_vector(31 downto 0)
+			OUTPUT : out std_logic_vector(7 downto 0)
 		);
 	end component;
 	-- 1B in
@@ -34,12 +34,12 @@ architecture behaviour of fifo_tb is
 	signal NOPUSH : std_logic;
 	-- 8B I/O
 	signal INPUT : std_logic_vector(7 downto 0);
-	signal OUTPUT : std_logic_vector(31 downto 0);
+	signal OUTPUT : std_logic_vector(7 downto 0);
 	-- additional signals
 	constant CKperiod : time := 5 ns;
 	
 begin
-	uut: FIFO_allocator port map (
+	uut: fifo port map (
 		PUSH => PUSH,
 		CLK => CLK,
 		POP => POP,
@@ -64,14 +64,14 @@ begin
 	-- execution
 	INIT <= '1';
 	-- pushing
-	for i in 0 to 2 loop
-		PUSH <= NOT PUSH;
+	for i in 0 to 12 loop
+		PUSH <= '1';
 		wait until rising_edge(CLK);
 		assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
 			report "Invalid allocation"
 			severity failure;
+		PUSH <= '0';
 	end loop;
-	PUSH <= NOT PUSH;
 	wait until rising_edge(CLK);
 	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
 		report "Memory should be full"
