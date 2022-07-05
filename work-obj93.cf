@@ -1,7 +1,7 @@
 v 4
-file . "fifo_allocator.vhd" "a88d38b23b851831140a5ff92dd0278b97f11b8f" "20220609080325.277":
-  entity fifo at 1( 0) + 0 on 37;
-  architecture bechaviour of fifo at 22( 473) + 0 on 38;
-file . "fifo_testbench.vhd" "0bbe302cf38e343db586ee4e64bb69b507d509fd" "20220608231820.347":
-  entity fifo_tb at 1( 0) + 0 on 33;
-  architecture behaviour of fifo_tb at 7( 115) + 0 on 34;
+file . "fifo_allocator.vhd" "72bea99db05f97280f507d48bb9ae95f430bea4a" "20220705203525.238":
+  entity fifo at 1( 0) + 0 on 29;
+  architecture mealymodel of fifo at 11( 177) + 0 on 30;
+file . "fifo_testbench.vhd" "f3d45dc09eda970959bb101d9bfbb8a77147c9a7" "20220705203525.116":
+  entity fifo_tb at 1( 0) + 0 on 27;
+  architecture dataflow of fifo_tb at 8( 108) + 0 on 28;

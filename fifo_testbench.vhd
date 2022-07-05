@@ -1,133 +1,93 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
--- ENTITY
+
 entity fifo_tb is
 end entity;
-architecture behaviour of fifo_tb is
-	component fifo
-		PORT(
-			-- inputs 1B
-			PUSH : in std_logic;
-			POP : in std_logic;
-			INIT : in std_logic;
-			CLK : in std_logic;
-			-- outputs 1B
-			FULL : out std_logic;
-			EMPTY : out std_logic;
-			NOPOP : out std_logic;
-			NOPUSH : out std_logic;
-			-- 8B I/O
-			INPUT : in std_logic_vector(7 downto 0);
-			OUTPUT : out std_logic_vector(7 downto 0)
-		);
-	end component;
-	-- 1B in
-	signal PUSH : std_logic;
-	signal POP : std_logic;
-	signal INIT : std_logic;
-	signal CLK : std_logic;
-	-- 1B out
-	signal FULL : std_logic;
-	signal EMPTY : std_logic;
-	signal NOPOP : std_logic;
-	signal NOPUSH : std_logic;
-	-- 8B I/O
-	signal INPUT : std_logic_vector(7 downto 0);
-	signal OUTPUT : std_logic_vector(7 downto 0);
-	-- additional signals
-	constant CKperiod : time := 5 ns;
-	
-begin
-	uut: fifo port map (
-		PUSH => PUSH,
-		CLK => CLK,
-		POP => POP,
-		INIT => INIT,
-		FULL => FULL,
-		EMPTY => EMPTY,
-		NOPOP => NOPOP,
-		NOPUSH => NOPUSH,
-		INPUT => INPUT,
-		OUTPUT => OUTPUT
-	);
 
---	INIT - then
---	5 writes and 5 reads - fifth one should be either NOPOP or NOPUSH fourth one should be FULL or EMPTY
--- testing behaviour of control unit
-TEST_CONTROL_UNIT: process
+architecture dataflow of fifo_tb is
+component fifo is
+port(
+	init,pop,push : IN std_logic;
+	clk: in std_logic;
+	nopop,nopush,f_ll,e_pty : OUT std_logic);
+end component;
+
+signal init,pop,push,clk,nopop,nopush,f_ll,e_pty : std_logic;
+constant CKperiod : time := 5 ns;
 begin
-	PUSH <= '0';
-	POP <= '0';
-	INIT <= '0';
-	INPUT <= "00000000";
-	INIT <='0';
-	NOPOP <= '0';
-	NOPUSH <= '0';
-	FULL <= '0';
-	EMPTY <= '1';
-	wait until rising_edge(CLK);
-	-- execution
-	INIT <= '1';
-	-- pushing
-	for i in 0 to 12 loop
-		PUSH <= '1';
-		wait until rising_edge(CLK);
-		assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
-			report "Invalid allocation"
-			severity failure;
-		PUSH <= '0';
-	end loop;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
-		report "Memory should be full"
-		severity failure;
-	PUSH <= NOT PUSH;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '1' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
-		report "Memory overflow"
-		severity failure;
-	POP <= NOT POP;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
-		report "NOPUSH shouldn't be in HIGH state as FIFO is no longer full"
-		severity failure;
-	PUSH <= NOT PUSH;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '1' AND EMPTY = '0'
-		report "Memory should be full"
-		severity failure;
-	-- popping
-	for i in 0 to 2 loop
-		POP <= NOT POP;
-		wait until rising_edge(CLK);
-		assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
-			report "Invalid allocation"
-			severity failure;
-	end loop;
-	POP <= NOT POP;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '1'
-		report "Memory should be empty"
-		severity failure;
-	POP <= NOT POP;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '0' AND NOPOP = '1' AND FULL = '0' AND EMPTY = '1'
-		report "Memory overflow"
-		severity failure;
-	PUSH <= NOT PUSH;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '0'
-		report "NOPOP shouldn't be in HIGH state as FIFO is no longer empty"
-		severity failure;
-	POP <= NOT POP;
-	wait until rising_edge(CLK);
-	assert NOPUSH = '0' AND NOPOP = '0' AND FULL = '0' AND EMPTY = '1'
-		report "Memory should be empty"
-		severity failure;
-	end process;
-	
-	CLK_GEN : process
+
+uut : fifo port map(
+	init=>init,
+	pop=>pop,
+	push=>push,
+	clk=>clk,
+	nopop=>nopop,
+	nopush=>nopush,
+	f_ll=>f_ll,
+	e_pty=>e_pty);
+
+stim : process 
+begin
+
+pop <= '0';
+push <= '0';
+init <='0';
+report "[0] setup" severity warning;
+-- ensure reset
+wait until rising_edge(clk);
+init <= '1';
+-- ensure initialization
+report "[1]  testing initialization" severity warning;
+wait until rising_edge(clk);
+assert e_pty='1' and f_ll = '0' and nopop='0' and nopush='0'
+report "Stack should be empty after init" severity error;
+-- state EMPTY :: test pop
+report "[2]   popping from empty stack" severity warning;
+pop <='1';
+wait until rising_edge(clk);
+pop<='0';
+wait until rising_edge(clk);
+-- 		check if nopop works
+assert e_pty='1' and f_ll ='0' and nopop='1' and nopush='0'
+report "double free - Stack shout return nopop" severity failure;
+--		check if nopop=0 after no popping occured
+report "[3]    veryfying that nopop defaults to 0" severity warning;
+pop <='0';
+wait until rising_edge(clk);
+assert e_pty='1' and f_ll ='0' and nopop='0' and nopush='0'
+report "nopop should default to 0" severity failure;
+--		check if reset(init=0) works
+init<='0';
+wait until rising_edge(clk);
+init<='1';
+assert e_pty='1' and f_ll = '0' and nopop='0' and nopush='0'
+report "Stack should be empty after init" severity failure;
+-- state EMPTY :: test transition EMPTY->UNDEFINED->EMPTY
+push<='1';
+pop<='0';
+wait until rising_edge(clk);
+push<='0';
+wait until rising_edge(clk);
+wait until rising_edge(clk);
+wait until rising_edge(clk);
+assert e_pty='0' --and f_ll='0' and nopop='0' and nopush='0'
+report "Stack should be no longer empty after pushing" severity failure;
+pop<='1';
+push<='0';
+wait until rising_edge(clk);
+wait until rising_edge(clk);
+wait until rising_edge(clk);
+wait until rising_edge(clk);
+assert e_pty='1' and f_ll='0' and nopop='0' and nopush='0'
+report "Stack should be empty after popping last item" severity failure;
+wait until rising_edge(clk);
+-- state EMPTY :: test transition EMPTY->UNDEFINED->FULL->UNDEFINED
+
+assert 1=1
+report "------------------TEST PASSED------------------" severity failure;
+end process;
+CLK_GEN : process
 	begin
 		CLK <= '0';
 		loop
@@ -136,4 +96,4 @@ begin
 		end loop;
 	wait;
 	end process;
-	END;
+end ;

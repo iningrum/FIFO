@@ -1,0 +1,5 @@
+#!/bin/bash
+ghdl -a fifo_testbench.vhd
+ghdl -a fifo_allocator.vhd
+ghdl -e fifo_tb
+ghdl -r fifo_tb
