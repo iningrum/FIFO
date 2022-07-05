@@ -8,17 +8,17 @@ end entity;
 architecture dataflow of fifo_tb is
 component fifo is
 port(
-	init,pop,push : IN std_logic;
+	reset,pop,push : IN std_logic;
 	clk: in std_logic;
 	nopop,nopush,f_ll,e_pty : OUT std_logic);
 end component;
 
-signal init,pop,push,clk,nopop,nopush,f_ll,e_pty : std_logic;
+signal reset,pop,push,clk,nopop,nopush,f_ll,e_pty : std_logic;
 constant CKperiod : time := 5 ns;
 begin
 
 uut : fifo port map(
-	init=>init,
+	reset=>reset,
 	pop=>pop,
 	push=>push,
 	clk=>clk,
@@ -32,13 +32,13 @@ begin
 
 pop <= '0';
 push <= '0';
-init <='0';
+reset <='0';
 report "[0] setup" severity warning;
 -- ensure reset
 wait until rising_edge(clk);
-init <= '1';
+reset <= '1';
 -- ensure initialization
-report "[1]  testing initialization" severity warning;
+report "[1]  testing resetialization" severity warning;
 wait until rising_edge(clk);
 assert e_pty='1' and f_ll = '0' and nopop='0' and nopush='0'
 report "Stack should be empty after init" severity error;
@@ -47,44 +47,34 @@ report "[2]   popping from empty stack" severity warning;
 pop <='1';
 wait until rising_edge(clk);
 pop<='0';
-wait until rising_edge(clk);
 -- 		check if nopop works
 assert e_pty='1' and f_ll ='0' and nopop='1' and nopush='0'
 report "double free - Stack shout return nopop" severity failure;
 --		check if nopop=0 after no popping occured
 report "[3]    veryfying that nopop defaults to 0" severity warning;
-pop <='0';
 wait until rising_edge(clk);
 assert e_pty='1' and f_ll ='0' and nopop='0' and nopush='0'
 report "nopop should default to 0" severity failure;
---		check if reset(init=0) works
-init<='0';
+--		check if reset(reset=1) works
+reset<='1';
 wait until rising_edge(clk);
-init<='1';
+reset<='0';
 assert e_pty='1' and f_ll = '0' and nopop='0' and nopush='0'
-report "Stack should be empty after init" severity failure;
+report "Stack should be empty after reset" severity failure;
 -- state EMPTY :: test transition EMPTY->UNDEFINED->EMPTY
 push<='1';
 pop<='0';
 wait until rising_edge(clk);
 push<='0';
 wait until rising_edge(clk);
-wait until rising_edge(clk);
-wait until rising_edge(clk);
 assert e_pty='0' --and f_ll='0' and nopop='0' and nopush='0'
 report "Stack should be no longer empty after pushing" severity failure;
-pop<='1';
-push<='0';
-wait until rising_edge(clk);
-wait until rising_edge(clk);
-wait until rising_edge(clk);
-wait until rising_edge(clk);
-assert e_pty='1' and f_ll='0' and nopop='0' and nopush='0'
-report "Stack should be empty after popping last item" severity failure;
+push<='1';
+
 wait until rising_edge(clk);
 -- state EMPTY :: test transition EMPTY->UNDEFINED->FULL->UNDEFINED
 
-assert 1=1
+assert 1=0
 report "------------------TEST PASSED------------------" severity failure;
 end process;
 CLK_GEN : process
