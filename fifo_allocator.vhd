@@ -5,13 +5,13 @@ entity fifo is
 port(
 reset,pop,push : IN std_logic;
 clk: in std_logic;
-nopop,nopush,f_ll,e_pty : OUT std_logic);
+nopop,nopush : OUT std_logic);
 end fifo;
 
 architecture mealymodel of fifo is
 	type STATE is (EMPTY, UNDEFINED, FULL);
 	signal current_state, next_state : STATE; 
-	signal size : natural := 0;
+	signal size : natural range 0 to 3 := 0;
 	constant capacity : natural := 3;
 	constant mcap: natural := capacity-1; 
 	begin
@@ -29,47 +29,42 @@ architecture mealymodel of fifo is
   BEGIN
     case current_state is
 		when EMPTY =>
-		report "STATE IS EMPTY | "& integer'image(size)&" | "& std_logic'image(e_pty) severity warning;
+		report "STATE IS EMPTY | "& integer'image(size)&" | "& std_logic'image(nopop) severity warning;
 			
 			if (push='1' and push/=pop) THEN
 				next_state <= UNDEFINED;
-				e_pty <= '0';
 				--size <= size +1;
 			elsif (pop='1' and push/=pop) THEN
 				nopop <= '1';
-				e_pty <= '1';
 			else
 				nopop <= '0';
-				e_pty <= '1';
 			end if;
 			nopush<='0';
-			f_ll<='0';
 		when UNDEFINED =>
-		report "STATE IS UNDEFINED | "& integer'image(size)&" | "& std_logic'image(e_pty) severity warning;
+		report "STATE IS UNDEFINED | "& integer'image(size)&" | "&std_logic'image(nopop) severity warning;
 			If(size = 1) then
 					if (pop='1' and push/=pop) then
 						next_state <= EMPTY;
-						--size <= 0;
+						size <= 0;
 					elsif (push/=pop) then
-						--size <= 2;
+						size <= 2;
 						end if;
 				elsif (size = mcap) then
 					if (push='1' and push/=pop) then
 						next_state <= FULL;
-						--size <= capacity;
+						size <= capacity;
 					elsif (push/=pop) then
-						--size <= size - 1;
+						size <= size - 1;
 					end if;
 				else
 					if (push='1' and push/=pop) then
-						--size<= size +1;
+						size<= size +1;
 					elsif (push/=pop) then
-						--size <= size -1;
+						size <= size -1;
 						end if;
 				end if;
 		when FULL =>
-			report "STATE IS FULL | "& integer'image(size)&" | "& std_logic'image(e_pty) severity warning;
-			f_ll <= '1';
+			report "STATE IS FULL | "& integer'image(size)&" | "& std_logic'image(nopush) severity warning;
 			if (push='1' and push/=pop) THEN
 				nopush <= '1';
 			elsif (pop='1' and push/=pop) THEN
