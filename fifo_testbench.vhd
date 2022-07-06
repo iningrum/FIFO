@@ -63,13 +63,14 @@ report "Stack should be empty after reset" severity failure;
 push<='1';
 pop<='0';
 wait until rising_edge(clk);
-push<='0';
 wait until rising_edge(clk);
 -- mmm
-push<='1';
 report "ww" severity warning;
 wait until rising_edge(clk);
-wait until rising_edge(clk);wait until rising_edge(clk);wait until rising_edge(clk);wait until rising_edge(clk);wait until rising_edge(clk);wait until rising_edge(clk);
+push<='0';
+wait until rising_edge(clk);
+wait until rising_edge(clk);
+wait until rising_edge(clk);wait until rising_edge(clk);wait until rising_edge(clk);wait until rising_edge(clk);wait until rising_edge(clk);
 report "ww" severity warning;
 -- state EMPTY :: test transition EMPTY->UNDEFINED->FULL->UNDEFINED
 

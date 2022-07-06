@@ -21,12 +21,14 @@ architecture mealymodel of fifo is
     	current_state <= EMPTY;
     ELSIF rising_edge(clk) THEN
 	  report "=======>> STATE UPDATE" severity warning;
+	  report "                                              STATE | "& STATE'image(current_state)&" | "& STATE'image(next_state) severity warning;
       current_state <= next_state;
     END IF;
   END PROCESS;
 
-  CombLogic: PROCESS (current_state, push, pop)
+  CombLogic: PROCESS (clk,push,pop)
   BEGIN
+  report "STATE | "& STATE'image(current_state)&" | "& STATE'image(next_state) severity warning;
     case current_state is
 		when EMPTY =>
 		report "STATE IS EMPTY | "& integer'image(size)&" | "& std_logic'image(nopop) severity warning;
@@ -42,27 +44,7 @@ architecture mealymodel of fifo is
 			nopush<='0';
 		when UNDEFINED =>
 		report "STATE IS UNDEFINED | "& integer'image(size)&" | "&std_logic'image(nopop) severity warning;
-			If(size = 1) then
-					if (pop='1' and push/=pop) then
-						next_state <= EMPTY;
-						size <= 0;
-					elsif (push/=pop) then
-						size <= 2;
-						end if;
-				elsif (size = mcap) then
-					if (push='1' and push/=pop) then
-						next_state <= FULL;
-						size <= capacity;
-					elsif (push/=pop) then
-						size <= size - 1;
-					end if;
-				else
-					if (push='1' and push/=pop) then
-						size<= size +1;
-					elsif (push/=pop) then
-						size <= size -1;
-						end if;
-				end if;
+			next_state<=FULL;
 		when FULL =>
 			report "STATE IS FULL | "& integer'image(size)&" | "& std_logic'image(nopush) severity warning;
 			if (push='1' and push/=pop) THEN
