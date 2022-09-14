@@ -1,0 +1,7 @@
+#!/bin/bash
+ghdl -a improved_fifo_tb.vhd
+ghdl -a improved_fifo.vhd
+ghdl -e tb_fifo
+ghdl -r tb_fifo
+echo "running test"
+./fifo
