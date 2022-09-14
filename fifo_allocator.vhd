@@ -1,61 +1,99 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
-entity fifo is
+
+entity fifo_ync is
+generic(
+    M : integer := 8;    --> width 
+    N : integer := 4;   --> depth 
+    AF: integer := 4;   --> nopush 
+    AE: integer := 0    --> nopop
+);
 port(
-reset,pop,push : IN std_logic;
-clk: in std_logic;
-nopop,nopush : OUT std_logic);
-end fifo;
+    rst,clk         :  in std_logic;
+    push            :  in std_logic;
+    data_in          :  in std_logic_vector(M-1 downto 0);
+    pop            :  in std_logic;
+    data_out          : out std_logic_vector(M-1 downto 0);
+    empty,nopop         : out std_logic;
+    full,nopush          : out std_logic
+);
+end fifo_ync;
 
-architecture mealymodel of fifo is
-	type STATE is (EMPTY, UNDEFINED, FULL);
-	signal current_state, next_state : STATE; 
-	signal size : natural range 0 to 3 := 0;
-	constant capacity : natural := 3;
-	constant mcap: natural := capacity-1; 
-	begin
-		StateRegister: PROCESS (clk, reset)
-  BEGIN
-    IF (reset = '1') THEN
-    	current_state <= EMPTY;
-    ELSIF rising_edge(clk) THEN
-	  report "=======>> STATE UPDATE" severity warning;
-	  report "                                              STATE | "& STATE'image(current_state)&" | "& STATE'image(next_state) severity warning;
-      current_state <= next_state;
-    END IF;
-  END PROCESS;
+architecture elp of fifo_ync is
+    type fifo_type is array(0 to N-1) of std_logic_vector(M-1 downto 0);
+    signal r_fifo     : fifo_type := (others => (others => '0'));
+    signal s_counter  : integer range 0 to N   := 0;
+    signal s_write_count   : integer range 0 to N-1 := 0;
+    signal s_read_count   : integer range 0 to N-1 := 0;
+    signal s_full, s_empty, s_nopop, s_nopush : std_logic := '0';
+begin
+    full <= s_full;
+    empty <= s_empty;
+    nopush <= s_nopush;
+    nopop <= s_nopop;
+    write: process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                s_write_count <= 0;
+            else
+                if push = '1' then
+                    if s_full = '0' then 
+                        r_fifo(s_write_count) <= data_in;
+                        if s_write_count = N-1 then
+                            s_write_count <= 0;
+                        else 
+                            s_write_count <= s_write_count+1;
+                        end if;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process write;
 
-  CombLogic: PROCESS (clk,push,pop)
-  BEGIN
-  report "STATE | "& STATE'image(current_state)&" | "& STATE'image(next_state) severity warning;
-    case current_state is
-		when EMPTY =>
-		report "STATE IS EMPTY | "& integer'image(size)&" | "& std_logic'image(nopop) severity warning;
-			
-			if (push='1' and push/=pop) THEN
-				next_state <= UNDEFINED;
-				--size <= size +1;
-			elsif (pop='1' and push/=pop) THEN
-				nopop <= '1';
-			else
-				nopop <= '0';
-			end if;
-			nopush<='0';
-		when UNDEFINED =>
-		report "STATE IS UNDEFINED | "& integer'image(size)&" | "&std_logic'image(nopop) severity warning;
-			next_state<=FULL;
-		when FULL =>
-			report "STATE IS FULL | "& integer'image(size)&" | "& std_logic'image(nopush) severity warning;
-			if (push='1' and push/=pop) THEN
-				nopush <= '1';
-			elsif (pop='1' and push/=pop) THEN
-				--size <= size - 1;
-				next_state <= UNDEFINED;
-			else
-				nopop <= '0';
-			end if;
-		end case;
-  END PROCESS;
+    read: process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                s_read_count <= 0;
+            else
+                if pop = '1' then
+                    if s_empty = '0' then 
+                        if s_read_count = N-1 then
+                            s_read_count <= 0;
+                        else 
+                            s_read_count <= s_read_count+1;
+                        end if;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process read;
+    
+    count: process(clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                s_counter <= 0;
+            else
+                if (push = '1' and pop = '0') then
+                    if s_full = '0' then
+                        s_counter <= s_counter + 1;
+                    end if;
+                elsif (push = '0' and pop = '1') then
+                    if s_empty = '0' then 
+                        s_counter <= s_counter - 1;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process count;
 
-end mealymodel;
+    s_empty <= '1' when s_counter = 0 else '0';
+    s_full  <= '1' when s_counter = N else '0';
+    s_nopop <= '1' when s_counter <= AE else '0';
+    s_nopush <= '1' when s_counter >= AF else '0';
+    
+end architecture elp;
