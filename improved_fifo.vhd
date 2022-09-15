@@ -17,7 +17,6 @@ architecture basic of fifo is
     type BUFFR_TYPE is array(ELEM_NUM-1 downto 0) of std_logic_vector (ELEM_BITS-1 downto 0);
     signal BUFFR : BUFFR_TYPE;
     constant empty_elem : std_logic_vector (ELEM_BITS-1 downto 0) := (others =>'0') ;
-    signal u1 : unsigned (2 downto 0);
 
 begin
 
@@ -45,7 +44,7 @@ begin
             elsif(READ='1') then
                 NO_POP<='1';
             end if;
-
+            -- resetowanie flag
             if(READ='0') then -- reset flagi READ_BEFORE
                 READ_BEFORE := false;
                 NO_POP<='0';
